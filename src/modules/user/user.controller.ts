@@ -12,39 +12,6 @@ export class UserController {
     private readonly userService: UserService,
   ) {}
 
-  @MessagePattern({ cmd: commands.CREATE_USER })
-  async handleCreateUser(@Payload() data: any) {
-    try {
-
-      this.logger.log(
-        `Received request to create user with data: ${JSON.stringify(data)}`,
-        'IAM - handleCreateUser',
-      );
-
-      const user = await this.userService.createUser(data);
-
-      this.logger.log(
-        `User created successfully: ${JSON.stringify(data)}`,
-        'IAM - handleCreateUser',
-      );
-
-      return {
-        data: user,
-        message: SuccessMessages.USER_CREATED,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Error in creating user: ${JSON.stringify(error)}`,
-        'IAM - handleCreateUser',
-      );
-
-      throw new RpcException({
-        statusCode: error.status || 500,
-        message: error.message || ErrorMessages.INTERNAL_USER_CREATION,
-      });
-    }
-  }
-
   @MessagePattern({ cmd: commands.GET_USER })
   async handleGetUser(@Payload() data: any) {
     try {
@@ -69,39 +36,6 @@ export class UserController {
       this.logger.error(
         `Error in fetching user: ${JSON.stringify(error)}`,
         'IAM - handleGetUser',
-      );
-
-      throw new RpcException({
-        statusCode: error.status || 500,
-        message: error.message || ErrorMessages.INTERNAL_USER_FETCHING,
-      });
-    }
-  }
-
-  @MessagePattern({ cmd: commands.GET_USERS })
-  async handleGetUsers(@Payload() data: any) {
-    try {
-
-      this.logger.log(
-        `Received request to get users: ${JSON.stringify(data)}`,
-        'IAM - handleGetUsers',
-      );
-
-      const users = await this.userService.getUsers(data);
-
-      this.logger.log(
-        `Users fetched successfully: ${JSON.stringify(data)}`,
-        'IAM - handleGetUsers',
-      );
-
-      return {
-        data: users,
-        message: SuccessMessages.USERS_FETCHED,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Error in fetching users: ${JSON.stringify(error)}`,
-        'IAM - handleGetUsers',
       );
 
       throw new RpcException({
@@ -239,6 +173,39 @@ export class UserController {
       throw new RpcException({
         statusCode: error.status || 500,
         message: error.message || ErrorMessages.INTERNAL_USER_CREATION,
+      });
+    }
+  }
+
+  @MessagePattern({ cmd: commands.CHECK_USER_EXISTS })
+  async handleCheckUserExists(@Payload() data: any) {
+    try {
+
+      this.logger.log(
+        `Received request to check if user exists: ${JSON.stringify({ email: data.email, phone: data.phone })}`,
+        'IAM - handleCheckUserExists',
+      );
+
+      const result = await this.userService.checkUserExists(data);
+
+      this.logger.log(
+        `User existence checked successfully: ${JSON.stringify(result)}`,
+        'IAM - handleCheckUserExists',
+      );
+
+      return {
+        data: result,
+        message: result.exists ? ErrorMessages.USER_ALREADY_EXISTS : ErrorMessages.USER_DOES_NOT_EXIST,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error checking user existence: ${JSON.stringify(error)}`,
+        'IAM - handleCheckUserExists',
+      );
+
+      throw new RpcException({
+        statusCode: error.status || 500,
+        message: error.message || ErrorMessages.INTERNAL_USER_EXISTENCE_CHECK,
       });
     }
   }

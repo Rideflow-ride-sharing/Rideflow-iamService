@@ -10,9 +10,10 @@ export class AuthJwtService {
   ) {}
 
   async generateToken(payload: any): Promise<string> {
+    const expiresIn = this.configService.get<string>('JWT_EXPIRES_IN') || '24h';
     return this.jwtService.signAsync(payload, {
       secret: this.configService.get<string>('JWT_SECRET') || 'your-secret-key',
-      expiresIn: this.configService.get<string>('JWT_EXPIRES_IN') || '24h',
+      expiresIn: expiresIn as any,
     });
   }
 

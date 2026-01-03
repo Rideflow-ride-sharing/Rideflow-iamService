@@ -33,52 +33,71 @@ export class UserService {
     private readonly authJwtService: AuthJwtService,
   ) {}
 
-  async createUser(data: any) {
-
-    this.logger.log('Creating user', 'IAM - createUser');
-
-    // TODO: Implement user creation logic (e.g., save to database)
-    return {
-      id: 'generated-id',
-      ...data,
-    };
-  }
-
   async getUser(data: any) {
 
     this.logger.log(`Getting user with id: ${data.id}`, 'IAM - getUser');
 
-    // TODO: Implement get user logic (e.g., fetch from database)
-    return {
-      id: data.id,
-      name: 'Sample User',
-    };
+    const user = await this.userModel.findById(data.id).populate('roleId').lean();
+    if (!user) {
+      throw new NotFoundException(ErrorMessages.USER_NOT_FOUND);
+    }
+
+    return user;
   }
 
-  async getUsers(data: any) {
+  async checkUserExists(data: any) {
 
-    this.logger.log('Getting all users', 'IAM - getUsers');
+    this.logger.log(`Checking if user exists: ${JSON.stringify({ email: data.email, phone: data.phone })}`, 'IAM - checkUserExists');
 
-    // TODO: Implement get users logic (e.g., fetch from database)
-    return [];
+    const { email, phone } = data;
+    const existingUser = await this.userModel.findOne({
+      $or: [{ email }, { phone }],
+    });
+
+    if (existingUser) {
+      if (existingUser.email === email) {
+        return {
+          exists: true,
+          field: 'email',
+          message: ErrorMessages.EMAIL_ALREADY_EXISTS,
+        };
+      }
+      if (existingUser.phone === phone) {
+        return {
+          exists: true,
+          field: 'phone',
+          message: ErrorMessages.PHONE_ALREADY_EXISTS,
+        };
+      }
+    }
+
+    return {
+      exists: false,
+    };
   }
 
   async updateUser(data: any) {
 
     this.logger.log(`Updating user with id: ${data.id}`, 'IAM - updateUser');
 
-    // TODO: Implement update user logic (e.g., update in database)
-    return {
-      id: data.id,
-      ...data,
-    };
+    const { id, ...updateData } = data;
+    const user = await this.userModel.findByIdAndUpdate(id, updateData, { new: true }).lean();
+    if (!user) {
+      throw new NotFoundException(ErrorMessages.USER_NOT_FOUND);
+    }
+
+    return user;
   }
 
   async deleteUser(data: any) {
 
     this.logger.log(`Deleting user with id: ${data.id}`, 'IAM - deleteUser');
 
-    // TODO: Implement delete user logic (e.g., delete from database)
+    const user = await this.userModel.findByIdAndDelete(data.id);
+    if (!user) {
+      throw new NotFoundException(ErrorMessages.USER_NOT_FOUND);
+    }
+
     return {
       id: data.id,
       deleted: true,
